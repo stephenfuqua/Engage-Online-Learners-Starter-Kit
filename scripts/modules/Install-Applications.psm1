@@ -25,6 +25,7 @@ function Install-Choco {
         &refreshenv
     }
     &choco feature disable --name showDownloadProgress --execution-timeout=$installTimeout
+    Test-ExitCode
 
     return Get-Command "choco.exe" -ErrorAction SilentlyContinue
 }
@@ -40,7 +41,10 @@ function Install-SQLServer {
 
     &choco install sql-server-express @common_args -o -ia `
         "'/IACCEPTSQLSERVERLICENSETERMS /Q /ACTION=install /INSTANCEID=MSSQLSERVER /INSTANCENAME=MSSQLSERVER /TCPENABLED=1 /UPDATEENABLED=FALSE'"
+    Test-ExitCode
+
     &choco install sql-server-management-studio @common_args
+    Test-ExitCode
     &refreshenv
 
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
@@ -63,7 +67,10 @@ function Install-DotNet {
     Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole -NoRestart | Out-Null
 
     &choco install dotnetcore-sdk @common_args
+    Test-ExitCode
+
     &choco install dotnetcore-windowshosting @common_args
+    Test-ExitCode
     &refreshenv
 
     Stop-Transcript
@@ -79,6 +86,7 @@ function Install-VisualStudioCode {
     Start-Transcript -Path $LogFile -Append
 
     &choco install vscode @common_args
+    Test-ExitCode
     &refreshenv
 
     Remove-Item "C:\Users\*\Desktop\Visual Studio Code.lnk" -Force | Out-Null
@@ -97,6 +105,7 @@ function Install-GoogleChrome {
     Start-Transcript -Path $LogFile -Append
 
     &choco install GoogleChrome @common_args
+    Test-ExitCode
     &refreshenv
 
     Remove-Item "C:\Users\*\Desktop\Visual Studio Code.lnk" -Force | Out-Null
@@ -120,19 +129,57 @@ function Install-PowerBI {
     Start-Transcript -Path $LogFile -Append
 
     $url = "https://download.microsoft.com/download/8/8/0/880BCA75-79DD-466A-927D-1ABF1F5454B0/PBIDesktopSetup_x64.exe"
-    $expected_hash = "A9B9B3C8EB2ACF659D2C16DF93A4CBC012AD80BF4632E8D09AD0FE9598206C48"
 
     $installer = "$DownloadPath/PBIDesktopSetup_x64.exe"
     Invoke-RestMethod -Uri $url -OutFile $installer
 
-    $actual_hash = (Get-FileHash $installer).Hash
-
-    if ($actual_hash -ne $expected_hash) {
-        throw "PowerBI download failed: hashes do not match"
-    }
-
     &$installer -quiet -norestart ACCEPT_EULA=1
+    Test-ExitCode
+
     Stop-Transcript
 }
+
+function Install-Python {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$True)]
+        [string]
+        $LogFile
+    )
+
+    Start-Transcript -Path $LogFile -Append
+
+    &choco install python3 --version 3.9.6 -y
+    Test-ExitCode
+
+    # This package does not add Python and Pip to the path
+    $additions = "C:\Python39\;C:\Python39\Scripts"
+    $env:PATH = "$env:PATH;$additions"
+
+    $value = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+    $value = "$value;$additions"
+    [Environment]::SetEnvironmentVariable("PATH", $value, "Machine")
+
+    Stop-Transcript
+}
+
+function Install-Poetry {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$True)]
+        [string]
+        $LogFile
+    )
+
+    Start-Transcript -Path $LogFile -Append
+
+    (Invoke-WebRequest -Uri https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -UseBasicParsing).Content | python -
+    &refreshenv
+
+    $env:PATH = "$env:PATH;$env:USERPROFILE\.poetry\bin"
+
+    Stop-Transcript
+}
+
 
 Export-ModuleMember *

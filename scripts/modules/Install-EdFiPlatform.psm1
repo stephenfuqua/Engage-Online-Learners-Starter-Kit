@@ -111,7 +111,7 @@ function Install-WebApi {
         PackageVersion = $PackageVersion
         DownloadPath = $DownloadPath
         ToolsPath = $DownloadPath
-        InstallType = "YearSpecific"
+        InstallType = "SharedInstance"
         DbConnectionInfo = @{
             Engine="SqlServer"
             Server="localhost"
@@ -207,6 +207,8 @@ function Install-ClientBulkLoader {
         --version $packageVersion `
         --add-source $EdFiFeed `
         EdFi.Suite3.BulkLoadClient.Console
+
+    Test-ExitCode
 }
 
 function Install-AdminApp {
@@ -260,7 +262,7 @@ function Install-AdminApp {
         OdsDatabaseName = "EdFi_Ods"
         OdsApiUrl = "https://$(hostname)/WebApi"
         AdminAppFeatures = @{
-            ApiMode = "YearSpecific"
+            ApiMode = "SharedInstance"
         }
         WebSitePath = (Resolve-Path $WebRoot)
     }
@@ -275,30 +277,51 @@ function Install-AnalyticsMiddleTier {
         [string]
         $DownloadPath,
 
-        [Parameter(Mandatory=$True)]
         [string]
-        $AmtOptions = "RLS"
+        $AmtOptions = "RLS",
+
+        [string]
+        $BranchOrTag = "main"
     )
 
     Write-Host "Installing the Analytics Middle Tier"
 
     # Download the AMT source
-    $url = "https://github.com/Ed-Fi-Alliance-OSS/Ed-Fi-Analytics-Middle-Tier/archive/refs/heads/main.zip"
-    $amtZip = "$DownloadPath/amt-main.zip"
+    $amtZip = "$DownloadPath/amt.zip"
+    try {
+        # ... first assume that a branch name was given
+        $url = "https://github.com/Ed-Fi-Alliance-OSS/Ed-Fi-Analytics-Middle-Tier/archive/refs/heads/$BranchOrTag.zip"
+        Invoke-RestMethod -Uri $url -OutFile $amtZip
+    }
+    catch {
+        # ... now try treating as a tag instead, and if it fails, let it bubble up
+        $url = "https://github.com/Ed-Fi-Alliance-OSS/Ed-Fi-Analytics-Middle-Tier/archive/refs/tags/$BranchOrTag.zip"
+        Invoke-RestMethod -Uri $url -OutFile $amtZip
+    }
+
     Invoke-RestMethod -Uri $url -OutFile $amtZip
     Expand-Archive -Path $amtZip -Destination $DownloadPath -Force
-    $amtDirectory = "$DownloadPath/Ed-Fi-Analytics-Middle-Tier-main"
+    $amtDirectory = "$DownloadPath/Ed-Fi-Analytics-Middle-Tier-$BranchOrTag"
 
     # Install the core collection, plus: Engage, EWS, RLS, and Indexes
     $sln = "$amtDirectory/src/EdFi.AnalyticsMiddleTier.sln"
     $proj = "$amtDirectory/src/EdFi.AnalyticsMiddleTier.Console/EdFi.AnalyticsMiddleTier.Console.csproj"
     &dotnet restore $sln
+    Test-ExitCode
     &dotnet build $sln
+    Test-ExitCode
 
-    $connString = "server=localhost;database=EdFi_ODS_2022;integrated security=SSPI"
-    &dotnet run -p $proj `
-        --connectionString $connstring `
-        --options $AmtOptions
+    # AMT does not like the way that the options come through when you just
+    # run something like
+    #     dotnet run --connectionString $connString --options $AmtOptions
+    # The argument parser can't handle something about the way the options come
+    # through. A work around is to create the entire command as a string and
+    # then invoke it as an expression.
+    $connString = "server=localhost;database=EdFi_ODS;integrated security=SSPI"
+    $command = "&dotnet run -p $proj --connectionString '$connstring' --options $AmtOptions"
+    Write-Host -ForegroundColor Magenta -Object $command
+    Invoke-Expression $command
+    Test-ExitCode
 }
 
 Export-ModuleMember *

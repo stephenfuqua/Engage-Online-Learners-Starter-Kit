@@ -5,25 +5,6 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-function Install-Python {
-    &choco install python3 --version 3.9.6 -y
-
-    # This package does not add Python and Pip to the path
-    $additions = "C:\Python39\;C:\Python39\Scripts"
-    $env:PATH = "$env:PATH;$additions"
-
-    $value = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-    $value = "$value;$additions"
-    [Environment]::SetEnvironmentVariable("PATH", $value, "Machine")
-}
-
-function Install-Poetry {
-    (Invoke-WebRequest -Uri https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -UseBasicParsing).Content | python -
-    &refreshenv
-
-    $env:PATH = "$env:PATH;$env:USERPROFILE\.poetry\bin"
-}
-
 function New-EnvFile {
     [CmdletBinding()]
     param (
@@ -44,27 +25,28 @@ function Install-LMSSampleData {
     param (
         [Parameter(Mandatory=$True)]
         [string]
-        $InstallDir
+        $LmsDirectory
     )
 
-    $lmsDirectory = "$InstallDir/LMS-Toolkit-main"
 
     try {
-        Push-Location -Path "$lmsDirectory/src/lms-ds-loader"
+        Push-Location -Path "$LmsDirectory/src/lms-ds-loader"
         &poetry install
 
         # Upload sample LMS data into the `lms` schema
         &poetry run python ./edfi_lms_ds_loader/ `
-            --csvpath ../../../docs/starter-kit-sample
+            --csvpath (Resolve-Path -Path "../../docs/starter-kit-sample")
     }
     catch {throw}
     finally {
         Pop-Location
     }
 
+    Test-ExitCode
+
     # Copy assignment information into the `lmsx` schema
     try {
-        Push-Location -Path "$lmsDirectory/src/lms-harmonizer"
+        Push-Location -Path "$LmsDirectory/src/lms-harmonizer"
         &poetry install
         &poetry run python ./edfi_lms_harmonizer/
     }
@@ -72,6 +54,8 @@ function Install-LMSSampleData {
     finally {
         Pop-Location
     }
+
+    Test-ExitCode
 }
 
 function Install-LMSToolkit {
@@ -83,23 +67,49 @@ function Install-LMSToolkit {
 
         [Parameter(Mandatory=$True)]
         [string]
-        $InstallDir
+        $InstallDir,
+
+        # The branch or tag to download from GitHub
+        [string]
+        $BranchOrTag = "main",
+
+        [string]
+        $DatabaseServer = "localhost",
+
+        # Leave blank to use integrated security
+        [string]
+        $DatabaseUserName = "",
+
+        [string]
+        $DatabasePassword = "",
+
+        [string]
+        $DatabaseName = "EdFi_Ods"
     )
 
     # Download the LMS Toolkit source
-    $url = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit/archive/refs/heads/main.zip"
-    $lmsZip = "$DownloadPath/lms-main.zip"
-    Invoke-RestMethod -Uri $url -OutFile $lmsZip
+    $lmsZip = "$DownloadPath/lms-toolkit.zip"
+    try {
+        # ... first assume that a branch name was given
+        $url = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit/archive/refs/heads/$BranchOrTag.zip"
+        Invoke-RestMethod -Uri $url -OutFile $lmsZip
+    }
+    catch {
+        # ... now try treating as a tag instead, and if it fails, let it bubble up
+        $url = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit/archive/refs/tags/$BranchOrTag.zip"
+        Invoke-RestMethod -Uri $url -OutFile $lmsZip
+    }
+
     Expand-Archive -Path $lmsZip -Destination $InstallDir -Force
-    $lmsDirectory = "$InstallDir/LMS-Toolkit-main"
+    $lmsDirectory = "$InstallDir/LMS-Toolkit-$BranchOrTag"
 
     @"
 CANVAS_BASE_URL=[base URL of your canvas install]
 CANVAS_ACCESS_TOKEN=[access token from an administrative account]
 START_DATE=[extract courses that start from this date]
 END_DATE=[extract courses that end by this date]
-OUTPUT_DIRECTORY=$EdFiDir/lms-data/csv
-SYNC_DATABASE_DIRECTORY=$EdFiDir/lms-data/canvas
+OUTPUT_DIRECTORY=$InstallDir/lms-data/csv
+SYNC_DATABASE_DIRECTORY=$InstallDir/lms-data/canvas
 FEATURE=activities, attendance, assignments, grades
 "@ | New-EnvFile -Directory "$lmsDirectory/src/canvas-extractor"
 
@@ -107,44 +117,51 @@ FEATURE=activities, attendance, assignments, grades
 CLASSROOM_ACCOUNT=[email address of the Google Classroom admin account, required]
 START_DATE=[start date for usage data pull in yyyy-mm-dd format, optional]
 END_DATE=[end date for usage data pull in yyyy-mm-dd format, optional]
-OUTPUT_DIRECTORY=$EdFiDir/lms-data/csv
-SYNC_DATABASE_DIRECTORY=$EdFiDir/lms-data/google
+OUTPUT_DIRECTORY=$InstallDir/lms-data/csv
+SYNC_DATABASE_DIRECTORY=$InstallDir/lms-data/google
 FEATURE=activities, attendance, assignments, grades
 "@ | New-EnvFile -Directory "$lmsDirectory/src/google-classroom-extractor"
 
     @"
 SCHOOLOGY_KEY=[Schoology API key]
 SCHOOLOGY_SECRET=[Schoology API secret]
-SCHOOLOGY_INPUT_DIRECTORY=$EdFiDir/lms-data/schoology-activities
+SCHOOLOGY_INPUT_DIRECTORY=$InstallDir/lms-data/schoology-activities
 PAGE_SIZE=200
-OUTPUT_DIRECTORY=$EdFiDir/lms-data/csv
-SYNC_DATABASE_DIRECTORY=$EdFiDir/lms-data/schoology
+OUTPUT_DIRECTORY=$InstallDir/lms-data/csv
+SYNC_DATABASE_DIRECTORY=$InstallDir/lms-data/schoology
 FEATURE=activities, attendance, assignments, grades
 "@ | New-EnvFile -Directory  "$lmsDirectory/src/schoology-extractor"
 
     @"
-CSV_PATH=$EdFiDir/lms-data/csv
-DB_SERVER=localhost
-DB_NAME=EdFi_ODS_2022
-USE_INTEGRATED_SECURITY=True
+CSV_PATH=$InstallDir/lms-data/csv
+DB_SERVER=$DatabaseServer
+DB_NAME=$DatabaseName
+USE_INTEGRATED_SECURITY=$(if ($DatabaseUser -eq "") { "True" } else { "False" })
+DB_USERNAME=$DatabaseUserName
+DB_PASSWORD=$DatabasePassword
 "@ | New-EnvFile -Directory "$lmsDirectory/src/lms-ds-loader"
 
     @"
-DB_SERVER=localhost
-DB_NAME=EdFi_ODS_2022
-USE_INTEGRATED_SECURITY=True
-EXCEPTIONS_REPORT_DIRECTORY=$EdFiDir/lms-data/harmonizer-exceptions
+DB_SERVER=$DatabaseServer
+DB_NAME=$DatabaseName
+USE_INTEGRATED_SECURITY=$(if ($DatabaseUser -eq "") { "True" } else { "False" })
+DB_USERNAME=$DatabaseUserName
+DB_PASSWORD=$DatabasePassword
+EXCEPTIONS_REPORT_DIRECTORY=$InstallDir/lms-data/harmonizer-exceptions
 "@ | New-EnvFile -Directory "$lmsDirectory/src/lms-harmonizer"
 
     # Run the LMS DS Loader to create the `lms` schema tables
-    # and upload the sample starter kit data
     try {
         Push-Location -Path "$lmsDirectory/src/lms-ds-loader"
         &poetry install
 
+        Test-ExitCode
+
         # Don't want to load any data, so use a bogus directory
         &poetry run python ./edfi_lms_ds_loader/ `
             --csvpath $PSScriptRoot
+
+        Test-ExitCode
     }
     catch {throw}
     finally {
@@ -174,22 +191,35 @@ EXCEPTIONS_REPORT_DIRECTORY=$EdFiDir/lms-data/harmonizer-exceptions
     try {
         Push-Location -Path "$lmsDirectory/src/lms-harmonizer"
         &poetry install
+        Test-ExitCode
+
         &poetry run python ./edfi_lms_harmonizer/
+        Test-ExitCode
     }
     catch {throw}
     finally {
         Pop-Location
     }
 
-    # Certain descriptors are needed. Because the full LMSX extension is not installed
-    # yet, we need an alternate method to insert  those descriptors.
+    # Certain descriptors are needed. Because the full LMSX extension is not
+    # installed yet, we need an alternate method to insert those descriptors -
+    # can't bulk upload them through the API.
     try {
         Push-Location -Path "$lmsDirectory/utils/amt-integration-tests"
         &poetry install
-        &poetry run python ./LoadDescriptors.py `
-            --server localhost `
-            --dbname EdFi_ODS_2022 `
-            --useintegratedsecurity True
+        Test-ExitCode
+
+        $cmd = "poetry run python ./LoadDescriptors.py --server $DatabaseServer --dbname $DatabaseName"
+
+        if ($DatabaseUserName -eq "") {
+            $cmd += " --useintegratedsecurity True"
+        }
+        else {
+            $cmd += " --username $DatabaseUserName --password $DatabasePassword"
+        }
+
+        Invoke-Expression $cmd
+        Test-ExitCode
     }
     catch {throw}
     finally {
