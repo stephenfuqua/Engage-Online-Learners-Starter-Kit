@@ -20,7 +20,7 @@ Docs](https://techdocs.ed-fi.org/x/1wjgBQ) (community account required).
 ## Developer Notes
 
 * [Building a VM on AWS](docs/building-a-vm-on-aws.md)
-* [Building a VM on Localhist](docs/building-a-vm-on-localhost.md)
+* [Building a VM on Localhost](docs/building-a-vm-on-localhost.md)
 * [Sample Data Supporting Dashboard Development](docs/sample-data.md)
 
 ## Legal Information
