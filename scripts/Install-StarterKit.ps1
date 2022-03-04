@@ -40,7 +40,7 @@ param (
     $WebRoot = "c:/inetpub/Ed-Fi",
 
     [string]
-    $OdsPlatformVersion = "5.2"
+    $OdsPlatformVersion = "5.3"
 )
 $ErrorActionPreference = "Stop"
 

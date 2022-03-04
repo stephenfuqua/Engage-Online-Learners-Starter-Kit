@@ -14,7 +14,7 @@ function Get-SchemaXSDFilesFor52 {
 
     Write-Host "Downloading Schema XSD files"
 
-    $xsdUrl = "https://raw.githubusercontent.com/Ed-Fi-Alliance-OSS/Ed-Fi-ODS/v5.2/Application/EdFi.Ods.Standard/Artifacts/Schemas"
+    $xsdUrl = "https://raw.githubusercontent.com/Ed-Fi-Alliance-OSS/Ed-Fi-ODS/v5.3/Application/EdFi.Ods.Standard/Artifacts/Schemas"
     $schemas = "./schemas"
     New-Item -Path $schemas -ItemType Directory -Force | Out-Null
 
@@ -81,7 +81,7 @@ function New-BulkClientKeyAndSecret {
 }
 
 function Remove-BulkClientKeyAndSecret {
-    param (        
+    param (
         [string]
         $DatabaseServer = "localhost"
     )
@@ -114,7 +114,10 @@ function Invoke-BulkLoadInternetAccessData {
 
         [Parameter(Mandatory=$True)]
         [string]
-        $BulkLoadExe
+        $BulkLoadExe,
+
+        [string]
+        $ApiUrl = "https://$(hostname)/WebApi"
     )
 
     Write-Host "Preparing to upload additional sample data..."
@@ -124,10 +127,8 @@ function Invoke-BulkLoadInternetAccessData {
 
     New-BulkClientKeyAndSecret -ClientKey $ClientKey -ClientSecret $ClientSecret
 
-    $url = "https://$(hostname)/WebApi"
-
     $bulkParams = @(
-        "-b", $url,
+        "-b", $ApiUrl,
         "-d", (Resolve-Path -Path "$PSScriptRoot/../../data"),
         "-k", $ClientKey,
         "-s", $ClientSecret,
@@ -137,9 +138,7 @@ function Invoke-BulkLoadInternetAccessData {
     if ($UsingPlatformVersion52) {
         # There is a known bug in 5.2 where the bulk load client cannot
         # download schema from the API itself. Workaround: have the schema
-        # files available locally. This bug will be resolved in the next
-        # major release.
-
+        # files available locally. This bug was fixed in release 5.3.
         Write-Host "Downloading XML schema files"
 
         $schemaDirectory = "$PSScriptRoot/schemas"
