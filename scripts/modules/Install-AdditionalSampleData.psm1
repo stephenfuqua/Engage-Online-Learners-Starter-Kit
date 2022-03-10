@@ -2,19 +2,24 @@
 # Licensed to the Ed-Fi Alliance under one or more agreements.
 # The Ed-Fi Alliance licenses this file to you under the Apache License, Version 2.0.
 # See the LICENSE and NOTICES files in the project root for more information.
+#Requires -version 5
 
 $ErrorActionPreference = "Stop"
+Import-Module -Name "$PSScriptRoot/Tool-Helpers.psm1" -Force
 
 function Get-SchemaXSDFilesFor52 {
     param (
         [Parameter(Mandatory=$True)]
         [string]
-        $SchemaDirectory
+        $SchemaDirectory,
+        [Parameter(Mandatory=$True)]
+        [Hashtable]
+        $bulkLoadClientConfig
     )
 
     Write-Host "Downloading Schema XSD files"
-
-    $xsdUrl = "https://raw.githubusercontent.com/Ed-Fi-Alliance-OSS/Ed-Fi-ODS/v5.3/Application/EdFi.Ods.Standard/Artifacts/Schemas"
+    $version = $bulkLoadClientConfig.packageODSSchema52Details.version
+    $xsdUrl = "$($bulkLoadClientConfig.packageODSSchema52Details.packageUrl)/v$($version)/Application/EdFi.Ods.Standard/Artifacts/Schemas"
     $schemas = "./schemas"
     New-Item -Path $schemas -ItemType Directory -Force | Out-Null
 
@@ -51,29 +56,44 @@ function Get-SchemaXSDFilesFor52 {
 function New-BulkClientKeyAndSecret {
     param (
         [Parameter(Mandatory=$True)]
-        [string]
-        $ClientKey,
-
+        [Hashtable]
+        $lmsToolkitConfig,
         [Parameter(Mandatory=$True)]
-        [string]
-        $ClientSecret,
-
-        [string]
-        $DatabaseServer = "localhost"
+        [Hashtable]
+        $databasesConfig
     )
 
     Write-Host "Creating temporary credentials for the bulk upload process"
 
     $file = (Resolve-Path -Path "$PSScriptRoot/bulk-api-client.sql")
-    $params = @{
-        Database = "EdFi_Admin"
-        HostName = $DatabaseServer
-        InputFile = $file
-        OutputSqlErrors = $True
-        Variable = @(
-            "ClientKey=$ClientKey",
-            "ClientSecret=$ClientSecret"
-        )
+    $params = 
+    if($databasesConfig.installCredentials.useIntegratedSecurity){
+        @{
+            Database = "$($databasesConfig.adminDatabaseName)"
+            Hostname = "$($databasesConfig.databaseServer)"
+            ServerInstance = "$($databasesConfig.databaseServer)"
+            InputFile = $file
+            OutputSqlErrors = $True
+            Variable = @(
+                "ClientKey=$($lmsToolkitConfig.sampleData.key)",
+                "ClientSecret=$($lmsToolkitConfig.sampleData.secret)"
+            )
+        } 
+    }
+    else{
+        @{
+            Database = "$($databasesConfig.adminDatabaseName)"
+            Hostname = "$($databasesConfig.databaseServer)"
+            ServerInstance = "$($databasesConfig.databaseServer)"
+            UserName    = "$($databasesConfig.installCredentials.databaseUser)"
+            Password    = "$($databasesConfig.installCredentials.databasePassword)"
+            InputFile = $file
+            OutputSqlErrors = $True
+            Variable = @(
+                "ClientKey=$($lmsToolkitConfig.sampleData.key)",
+                "ClientSecret=$($lmsToolkitConfig.sampleData.secret)"
+            )
+        }
     }
 
     Invoke-SqlCmd @params
@@ -81,19 +101,46 @@ function New-BulkClientKeyAndSecret {
 }
 
 function Remove-BulkClientKeyAndSecret {
-    param (
-        [string]
-        $DatabaseServer = "localhost"
+    param (   
+        [Parameter(Mandatory=$True)]
+        [Hashtable]
+        $lmsToolkitConfig,
+        [Parameter(Mandatory=$True)]
+        [Hashtable]
+        $databasesConfig   
     )
 
     Write-Host "Removing temporary bulk load credentials"
 
     $file = (Resolve-Path -Path "$PSScriptRoot/remove-bulk-api-client.sql")
-    $params = @{
-        Database = "EdFi_Admin"
-        HostName = $DatabaseServer
-        InputFile = $file
-        OutputSqlErrors = $True
+    $params = 
+    if($databasesConfig.installCredentials.useIntegratedSecurity){
+        @{
+            Database = "$($databasesConfig.adminDatabaseName)"
+            HostName = "$($databasesConfig.databaseServer)"
+            ServerInstance = "$($databasesConfig.databaseServer)"
+            InputFile = $file
+            OutputSqlErrors = $True
+            Variable = @(
+                "ClientKey=$($lmsToolkitConfig.sampleData.key)",
+                "ClientSecret=$($lmsToolkitConfig.sampleData.secret)"
+            )
+        } 
+    }
+    else{
+        @{
+            Database = "$($databasesConfig.adminDatabaseName)"
+            HostName = "$($databasesConfig.databaseServer)"
+            ServerInstance = "$($databasesConfig.databaseServer)"
+            UserName    = "$($databasesConfig.installCredentials.databaseUser)"
+            Password    = "$($databasesConfig.installCredentials.databasePassword)"
+            InputFile = $file
+            OutputSqlErrors = $True
+            Variable = @(
+                "ClientKey=$($lmsToolkitConfig.sampleData.key)",
+                "ClientSecret=$($lmsToolkitConfig.sampleData.secret)"
+            )
+        }
     }
     Invoke-SqlCmd @params
     Test-ExitCode
@@ -102,30 +149,29 @@ function Remove-BulkClientKeyAndSecret {
 function Invoke-BulkLoadInternetAccessData {
     param (
         [Parameter(Mandatory=$True)]
-        [string]
-        $ClientKey,
-
+        [Hashtable]
+        $lmsToolkitConfig,
         [Parameter(Mandatory=$True)]
-        [string]
-        $ClientSecret,
-
+        [Hashtable]
+        $databasesConfig,
+        [Parameter(Mandatory=$True)]
         [switch]
         $UsingPlatformVersion52,
-
         [Parameter(Mandatory=$True)]
         [string]
         $BulkLoadExe,
-
+        [Parameter(Mandatory=$True)]
         [string]
-        $ApiUrl = "https://$(hostname)/WebApi"
+        $ApiUrl        
     )
-
+    $ClientKey = "$($lmsToolkitConfig.sampleData.key)"
+    $ClientSecret = "$($lmsToolkitConfig.sampleData.secret)"
     Write-Host "Preparing to upload additional sample data..."
 
     $bulkTemp = "$PSScriptRoot/bulk-temp"
     New-Item -Path $bulkTemp -ItemType Directory -Force | Out-Null
 
-    New-BulkClientKeyAndSecret -ClientKey $ClientKey -ClientSecret $ClientSecret
+    New-BulkClientKeyAndSecret -lmsToolkitConfig $lmsToolkitConfig -databasesConfig $databasesConfig
 
     $bulkParams = @(
         "-b", $ApiUrl,
@@ -153,7 +199,8 @@ function Invoke-BulkLoadInternetAccessData {
     &$BulkLoadExe @bulkParams
     Test-ExitCode
 
-    Remove-BulkClientKeyAndSecret
+    Remove-BulkClientKeyAndSecret -lmsToolkitConfig $lmsToolkitConfig -databasesConfig $databasesConfig
+
 }
 
 Export-ModuleMember Invoke-BulkLoadInternetAccessData
