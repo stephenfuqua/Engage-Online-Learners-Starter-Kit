@@ -7,7 +7,7 @@ $ProgressPreference = "SilentlyContinue"
 
 Import-Module -Name "$PSScriptRoot/Tool-Helpers.psm1" -Force
 
-function Install-Databases {
+function Invoke-DatabaseDeployment {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$True)]
