@@ -16,6 +16,7 @@ on:
       - main
     paths:
       - 'scripts/**'
+  workflow_dispatch:
 
 jobs:
   analyze:
