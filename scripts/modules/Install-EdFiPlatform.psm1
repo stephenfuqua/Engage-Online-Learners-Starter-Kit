@@ -284,7 +284,7 @@ function Install-AnalyticsMiddleTier {
         $BranchOrTag = "main"
     )
 
-    Write-Host "Installing the Analytics Middle Tier"
+    Write-Output "Installing the Analytics Middle Tier"
 
     # Download the AMT source
     $amtZip = "$DownloadPath/amt.zip"
@@ -319,7 +319,7 @@ function Install-AnalyticsMiddleTier {
     # then invoke it as an expression.
     $connString = "server=localhost;database=EdFi_ODS;integrated security=SSPI"
     $command = "&dotnet run -p $proj --connectionString '$connstring' --options $AmtOptions"
-    Write-Host -ForegroundColor Magenta -Object $command
+    Write-Output -ForegroundColor Magenta -Object $command
     Invoke-Expression $command
     Test-ExitCode
 }

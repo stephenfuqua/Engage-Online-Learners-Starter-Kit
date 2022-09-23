@@ -50,7 +50,7 @@ Import-Module "$PSScriptRoot\nuget-helper.psm1"
         odsDatabaseName       = "EdFi_Ods"
         securityDatabaseName  = "EdFi_Security"
         apiMode               = "sharedinstance"
-    }	
+    }
 .PARAMETER ApiUrl
     Ed-Fi ODS Web API Web URL.
 .PARAMETER edfiSource
@@ -62,36 +62,36 @@ function Install-EdFiAdmin(){
 		# IIS web site name
 		[string]
 		$webSiteName="Ed-Fi",
-		
+
         # Path for storing installation tools
 		[string]
 		$toolsPath="C:\\temp\\tools",
-		
+
         # Path for storing downloaded packages
 		[string]
 		$downloadPath="C:\\temp\\downloads",
-		
+
         # Hashtable containing Admin App settings and the installation directory
 		[Hashtable]
 		[Parameter(Mandatory=$true)]
 		$adminAppConfig,
-		
+
         # Hashtable containing information about the databases and its server
 		[Hashtable]
 		[Parameter(Mandatory=$true)]
 		$databasesConfig,
-        
+
         # Web API URL.
         [string]
 		[Parameter(Mandatory=$true)]
 		$ApiUrl,
-        
+
         # Ed-Fi nuget package feed source..
         [string]
         $edfiSource="https://pkgs.dev.azure.com/ed-fi-alliance/Ed-Fi-Alliance-OSS/_packaging/EdFi%40Release/nuget/v3/index.json"
 	)
-    Write-Host "---" -ForegroundColor Magenta
-    Write-Host "Ed-Fi Admin App process starting..." -ForegroundColor Magenta
+    Write-Output "---" -ForegroundColor Magenta
+    Write-Output "Ed-Fi Admin App process starting..." -ForegroundColor Magenta
 
     $paths = @{
         toolsPath       = $toolsPath
@@ -104,8 +104,8 @@ function Install-EdFiAdmin(){
     }
     $packagePath = nuget-helper\Install-EdFiPackage @packageDetails @paths
 
-	Write-Host "Start installation..." -ForegroundColor Cyan
-       
+	Write-Output "Start installation..." -ForegroundColor Cyan
+
     $adminAppParams = @{
         adminAppConfig  = $adminAppConfig
         databasesConfig = $databasesConfig
@@ -165,7 +165,7 @@ function New-AdminAppParameters {
         OdsDatabaseName         = $databasesConfig.odsDatabaseName
         SecurityDatabaseName    = $databasesConfig.securityDatabaseName
         AdminAppFeatures        = $adminAppFeatures
-        DbConnectionInfo        = $dbConnectionInfo        
+        DbConnectionInfo        = $dbConnectionInfo
     }
 }
 

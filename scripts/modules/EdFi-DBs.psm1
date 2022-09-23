@@ -64,25 +64,25 @@ function Install-EdFiDbs() {
     param (
         # Path for storing installation tools
         [string] $toolsPath="C:\\temp\\tools",
-        
+
         # Path for storing downloaded packages
         [string] $downloadPath="C:\\temp\\downloads",
 
         # Hashtable containing information about the databases and its server.
         [Parameter(Mandatory = $true)]
         [Hashtable] $databasesConfig,
-        
+
         # Time Travel Script file path
         [string] $timeTravelScriptPath,
-        
+
         # Ed-Fi nuget package feed source.
         [string]
         $edfiSource="https://pkgs.dev.azure.com/ed-fi-alliance/Ed-Fi-Alliance-OSS/_packaging/EdFi%40Release/nuget/v3/index.json"
     )
 
-    Write-Host "---" -ForegroundColor Magenta
-    Write-Host "Ed-Fi Databases module process starting..." -ForegroundColor Magenta
-    Write-Host "Ed-Fi Databases engine: $($databasesConfig.engine)"
+    Write-Output "---" -ForegroundColor Magenta
+    Write-Output "Ed-Fi Databases module process starting..." -ForegroundColor Magenta
+    Write-Output "Ed-Fi Databases engine: $($databasesConfig.engine)"
     $engine = $databasesConfig.engine
     if ($engine -ieq "Postgres") {
         $engine = "PostgreSQL"
@@ -151,7 +151,7 @@ function Install-EdFiDbs() {
     $securityDbConnectionInfo = $dbConnectionInfo.Clone()
     $securityDbConnectionInfo.DatabaseName = $databasesConfig.securityDatabaseName
 
-    Write-Host "Starting installation..." -ForegroundColor Cyan
+    Write-Output "Starting installation..." -ForegroundColor Cyan
 
     #Changing config file
     $json = Get-Content (Join-Path $EdFiRepositoryPath "configuration.json") | ConvertFrom-Json
@@ -168,7 +168,7 @@ function Install-EdFiDbs() {
         SetValue -object $json -key "ConnectionStrings.EdFi_Master" -value "server=$($databasesConfig.databaseServer);user id=$databaseUser;Password=$databasePassword;database=master;Application Name=EdFi.Ods.WebApi"
     }
     if($databasesConfig.apiMode){
-        Write-host "API MODE $($databasesConfig.apiMode)"
+        Write-Output "API MODE $($databasesConfig.apiMode)"
         SetValue -object $json -key "ApiSettings.Mode" -value "$($databasesConfig.apiMode)"
     }
     if($databasesConfig.engine){
@@ -190,16 +190,16 @@ function Install-EdFiDbs() {
     if($databasesConfig.populatedTemplateScript){
         SetValue -object $json -key "ApiSettings.PopulatedTemplateScript" -value "$($databasesConfig.populatedTemplateScript)"
     }
-    
+
     $json | ConvertTo-Json | Out-File (Join-Path $EdFiRepositoryPath "configuration.json")
-    write-host "JSON CONFIG: $json"
+    Write-Output "JSON CONFIG: $json"
     $env:toolsPath = (Join-Path (Get-RootPath) 'tools')
    # Although we have no plugins, the install does not react well when the
     # directory does not exist.
     New-Item -Path c:/plugin -Type Directory -Force | Out-Null
-    
-    Initialize-DeploymentEnvironment 
-   
+
+    Initialize-DeploymentEnvironment
+
     # Initialize-DeploymentEnvironment -OdsDatabaseTemplateName "populated"
     # Bring the years up to now instead of 2010-2011
     if($timeTravelScriptPath){
@@ -210,7 +210,7 @@ function Install-EdFiDbs() {
             DatabasePassword    = $databasesConfig.installCredentials.databasePassword
             DatabaseName        = $databasesConfig.odsDatabaseName
         }
-        Write-Host "Executing Time Travel script..."
+        Write-Output "Executing Time Travel script..."
         Invoke-SqlCmdOnODS @timeTravelDbConn
     }
 }

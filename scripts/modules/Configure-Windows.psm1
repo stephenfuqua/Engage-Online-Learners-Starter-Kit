@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 function Set-TLS12Support {
-    Write-Host "Enabling TLS 1.2"
+    Write-Output "Enabling TLS 1.2"
 
     if (-not [Net.ServicePointManager]::SecurityProtocol.HasFlag([Net.SecurityProtocolType]::Tls12)) {
         [Net.ServicePointManager]::SecurityProtocol += [Net.SecurityProtocolType]::Tls12
@@ -14,7 +14,7 @@ function Set-TLS12Support {
 }
 
 function Enable-LongFileNames {
-    Write-Host "Enabling long file name support"
+    Write-Output "Enabling long file name support"
 
     if (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem') {
         Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -name "LongPathsEnabled" -Value 1 -Verbose -Force

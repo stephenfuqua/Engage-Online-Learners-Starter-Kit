@@ -17,7 +17,7 @@ function Get-SchemaXSDFilesFor52 {
         $bulkLoadClientConfig
     )
 
-    Write-Host "Downloading Schema XSD files"
+    Write-Output "Downloading Schema XSD files"
     $version = $bulkLoadClientConfig.packageODSSchema52Details.version
     $xsdUrl = "$($bulkLoadClientConfig.packageODSSchema52Details.packageUrl)/v$($version)/Application/EdFi.Ods.Standard/Artifacts/Schemas"
     $schemas = "./schemas"
@@ -63,10 +63,10 @@ function New-BulkClientKeyAndSecret {
         $databasesConfig
     )
 
-    Write-Host "Creating temporary credentials for the bulk upload process"
+    Write-Output "Creating temporary credentials for the bulk upload process"
 
     $file = (Resolve-Path -Path "$PSScriptRoot/bulk-api-client.sql")
-    $params = 
+    $params =
     if($databasesConfig.installCredentials.useIntegratedSecurity){
         @{
             Database = "$($databasesConfig.adminDatabaseName)"
@@ -78,7 +78,7 @@ function New-BulkClientKeyAndSecret {
                 "ClientKey=$($lmsToolkitConfig.sampleData.key)",
                 "ClientSecret=$($lmsToolkitConfig.sampleData.secret)"
             )
-        } 
+        }
     }
     else{
         @{
@@ -101,19 +101,19 @@ function New-BulkClientKeyAndSecret {
 }
 
 function Remove-BulkClientKeyAndSecret {
-    param (   
+    param (
         [Parameter(Mandatory=$True)]
         [Hashtable]
         $lmsToolkitConfig,
         [Parameter(Mandatory=$True)]
         [Hashtable]
-        $databasesConfig   
+        $databasesConfig
     )
 
-    Write-Host "Removing temporary bulk load credentials"
+    Write-Output "Removing temporary bulk load credentials"
 
     $file = (Resolve-Path -Path "$PSScriptRoot/remove-bulk-api-client.sql")
-    $params = 
+    $params =
     if($databasesConfig.installCredentials.useIntegratedSecurity){
         @{
             Database = "$($databasesConfig.adminDatabaseName)"
@@ -125,7 +125,7 @@ function Remove-BulkClientKeyAndSecret {
                 "ClientKey=$($lmsToolkitConfig.sampleData.key)",
                 "ClientSecret=$($lmsToolkitConfig.sampleData.secret)"
             )
-        } 
+        }
     }
     else{
         @{
@@ -162,11 +162,11 @@ function Invoke-BulkLoadInternetAccessData {
         $BulkLoadExe,
         [Parameter(Mandatory=$True)]
         [string]
-        $ApiUrl        
+        $ApiUrl
     )
     $ClientKey = "$($lmsToolkitConfig.sampleData.key)"
     $ClientSecret = "$($lmsToolkitConfig.sampleData.secret)"
-    Write-Host "Preparing to upload additional sample data..."
+    Write-Output "Preparing to upload additional sample data..."
 
     $bulkTemp = "$PSScriptRoot/bulk-temp"
     New-Item -Path $bulkTemp -ItemType Directory -Force | Out-Null
@@ -185,7 +185,7 @@ function Invoke-BulkLoadInternetAccessData {
         # There is a known bug in 5.2 where the bulk load client cannot
         # download schema from the API itself. Workaround: have the schema
         # files available locally. This bug was fixed in release 5.3.
-        Write-Host "Downloading XML schema files"
+        Write-Output "Downloading XML schema files"
 
         $schemaDirectory = "$PSScriptRoot/schemas"
         New-Item -Path $schemaDirectory -ItemType Directory -Force | Out-Null
@@ -195,7 +195,7 @@ function Invoke-BulkLoadInternetAccessData {
         $bulkParams += (Resolve-Path -Path $schemaDirectory)
     }
 
-    Write-Host -ForegroundColor Magenta "Executing: $BulkLoadExe " $bulkParams
+    Write-Output -ForegroundColor Magenta "Executing: $BulkLoadExe " $bulkParams
     &$BulkLoadExe @bulkParams
     Test-ExitCode
 

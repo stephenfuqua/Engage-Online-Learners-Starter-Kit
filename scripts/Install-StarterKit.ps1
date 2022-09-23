@@ -21,7 +21,7 @@
     * Downloads the latest starter kit Power BI file on the desktop
 
     Assumes that you have already downloaded and installed the LMS Toolkit
-    
+
     .PARAMETER lmsToolkitConfig
     Hashtable containing LMS Toolkit settings and installation directory.
     $lmsToolkitConfig= @{
@@ -32,7 +32,7 @@
         packageDetails= @{
             packageURL= "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit"
             version= "main"
-        }     
+        }
         sampleData= @{
             key= "dfghjkl34567"
             secret= "4eryftgjh-pok%^K`$E%RTYG"
@@ -63,22 +63,22 @@
         dropDatabases= $true
         apiMode= "sharedinstance"
     }
-    
+
     .PARAMETER ApiUrl
     Ed-Fi Web API URL
-    
+
     .PARAMETER ToolsPath
     Temporary directory for downloaded components.
- 
+
     .PARAMETER ConsoleBulkLoadDirectory
     The directory in which the Console Bulk Loader was downloaded
 
     .PARAMETER LMSToolkitDirectory
     The directory in which the LMS Toolkit was downloaded and installed.
-   
+
     .PARAMETER webRootFolder
     Root directory for web applications.
-    
+
     .PARAMETER OdsPlatformVersion
     ODS Version
 #>
@@ -93,13 +93,13 @@ param (
         packageDetails= @{
             packageURL= "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit"
             version= "main"
-        }     
+        }
         sampleData= @{
             key= "dfghjkl34567"
             secret= "4eryftgjh-pok%^K```$E%RTYG"
         }
     },
-    
+
     # Hashtable containing information about the databases and its server.
     [Hashtable]
     $databasesConfig= @{
@@ -125,10 +125,10 @@ param (
         dropDatabases= $true
         apiMode= "sharedinstance"
     },
-    
+
     [string]
     $ApiUrl="https://$($env:computername)/WebApi",
-    
+
     # Temporary directory for downloaded components.
     [string]
     $ToolsPath = "$PSScriptRoot/.tools",
@@ -144,9 +144,9 @@ param (
     # Root directory for web applications.
     [string]
     $webRootFolder = "c:/inetpub/Ed-Fi",
-    
+
     [string]
-    $OdsPlatformVersion = "5.3"    
+    $OdsPlatformVersion = "5.3"
 )
 $ErrorActionPreference = "Stop"
 
@@ -156,7 +156,7 @@ Import-Module -Name "$PSScriptRoot/modules/Install-LMSToolkit.psm1" -Force
 Import-Module -Name "$PSScriptRoot/modules/Install-AdditionalSampleData.psm1" -Force
 
 function Install-LandingPage {
-    Write-Host "Installing the landing page"
+    Write-Output "Installing the landing page"
     Copy-Item -Path "$PSScriptRoot/../vm-docs/*" -Destination $webRootFolder
 
     $new_object = New-Object -ComObject WScript.Shell

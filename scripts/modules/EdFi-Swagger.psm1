@@ -16,7 +16,7 @@ Import-Module "$PSScriptRoot\Tool-Helpers.psm1"
 .DESCRIPTION
     Installs the Ed-Fi Swagger.
 .PARAMETER webSiteName
-    IIS web site name    
+    IIS web site name
 .PARAMETER toolsPath
     Path for storing installation tools.
 .PARAMETER downloadPath
@@ -68,15 +68,15 @@ function Install-EdFiSwagger(){
         [string]
         $edfiSource = "https://pkgs.dev.azure.com/ed-fi-alliance/Ed-Fi-Alliance-OSS/_packaging/EdFi%40Release/nuget/v3/index.json"
     )
-    
+
     $paths = @{
         toolsPath       = $toolsPath
         downloadPath    = $downloadPath
         edfiSource      = $edfiSource
     }
 
-    Write-Host "---" -ForegroundColor Magenta
-    Write-Host "Ed-Fi Swagger module process starting..." -ForegroundColor Magenta
+    Write-Output "---" -ForegroundColor Magenta
+    Write-Output "Ed-Fi Swagger module process starting..." -ForegroundColor Magenta
 
     $packageDetails = @{
         packageName = "$($swaggerUIConfig.packageInstallerDetails.packageName)"
@@ -91,20 +91,20 @@ function Install-EdFiSwagger(){
         edfiSource      = $edfiSource
     }
     $packagePath = nuget-helper\Install-EdFiPackage @packageDetails @paths
-    Write-Host "Creating parameter array..." -ForegroundColor Cyan
-    
+    Write-Output "Creating parameter array..." -ForegroundColor Cyan
+
     $parameters = New-SwaggerUIParameters @newParam
-    
-    $parameters.WebSiteName         = $webSiteName 
-    
-    Write-Host "Importing module Install-EdFiOdsSwaggerUI..." -ForegroundColor Cyan
+
+    $parameters.WebSiteName         = $webSiteName
+
+    Write-Output "Importing module Install-EdFiOdsSwaggerUI..." -ForegroundColor Cyan
     Import-Module -Force "$packagePath\Install-EdFiOdsSwaggerUI.psm1"
     try{
-        Write-Host "Starting installation SwaggerUI..." -ForegroundColor Cyan
+        Write-Output "Starting installation SwaggerUI..." -ForegroundColor Cyan
         Install-EdFiOdsSwaggerUI @parameters
     }
     catch{
-        write-host "Installation failed (SwaggerUI)..."
+        Write-Output "Installation failed (SwaggerUI)..."
         Test-ExitCode
     }
 }
@@ -118,16 +118,16 @@ function New-SwaggerUIParameters {
         [string] $webSiteName,
         [string] $edfiSource
     )
-    Write-Host "New param..."
+    Write-Output "New param..."
     $nugetPackageVersionParam=@{
         PackageName     = "$($swaggerUIConfig.packageDetails.packageName)"
         PackageVersion  = "$($swaggerUIConfig.packageDetails.version)"
         ToolsPath       = "$toolsPath"
         edfiSource      = "$($edfiSource)"
     }
-    Write-Host "Get Swagger Version..."
+    Write-Output "Get Swagger Version..."
     $swaggerUINugetVersion = Get-NuGetPackageVersion @nugetPackageVersionParam
-    Write-Host "Return New param..."
+    Write-Output "Return New param..."
     return @{
         PackageName         = "$($swaggerUIConfig.packageDetails.packageName)"
         PackageVersion      = "$($swaggerUINugetVersion)"

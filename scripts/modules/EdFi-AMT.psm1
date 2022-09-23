@@ -57,11 +57,11 @@ function Install-AMT {
     param (
         # Hashtable containing information about the AMT package and installation
         [Parameter(Mandatory=$true)]
-        [Hashtable]        
+        [Hashtable]
         $amtConfig,
-        # 
+        #
         [Parameter(Mandatory=$true)]
-        [Hashtable]        
+        [Hashtable]
         $databasesConfig
     )
     # Path for storing installation tools
@@ -82,13 +82,13 @@ function Install-AMT {
         Expand-amt-Files @paths
 
         $connectionString = New-amt-ConnectionString $databasesConfig
-    
+
         $consoleInstaller = Join-Path (Join-Path $amtInstallerPath $destinationName) $amtConsoleApp
-        
+
         Start-Process -NoNewWindow -FilePath $consoleInstaller -ArgumentList ($amtInstallArgumentList -f $connectionString, $amtConfig.options, $databaseEngine)
     }
     catch {
-        Write-Host $_
+        Write-Output $_
         throw $_
     }
 }
@@ -178,7 +178,7 @@ function Uninstall-AMT {
     param (
         # Hashtable containing information about the databases and its server
         [Parameter(Mandatory=$true)]
-        [Hashtable]        
+        [Hashtable]
         $databasesConfig,
         [Parameter(Mandatory=$true)]
         [Hashtable]
@@ -194,21 +194,21 @@ function Uninstall-AMT {
     }
     try{
         $databaseEngine = if($databasesConfig.engine -ieq "SQLServer"){"mssql"}else{"postgres"}
-        
+
         Request-amt-Files @packageDetails @paths
 
         Expand-amt-Files @packageDetails @paths
 
         $connectionString = New-amt-ConnectionString $databasesConfig
-    
+
         $consoleInstaller = Join-Path (Join-Path $amtInstallerPath $destinationName) $amtConsoleApp
-        
+
         Start-Process -NoNewWindow -Wait -FilePath $consoleInstaller -ArgumentList ($amtUninstallArgumentList -f $connectionString, $databaseEngine)
     }
     catch {
-        Write-Host $_
+        Write-Output $_
         throw $_
-    }    
+    }
 }
 function Request-amt-Files{
     param (
@@ -217,9 +217,9 @@ function Request-amt-Files{
         [string]$destinationName,
         [Hashtable]$amtConfig
     )
-    
+
 	$Url = "$($amtConfig.packageDetails.packageURL)/releases/download/$($amtConfig.packageDetails.version)/$($destinationName).zip"
-    
+
 	if( -Not (Test-Path -Path $amtPath ) )
 	{
         # Create the installer directory if it does not exist.
@@ -230,11 +230,11 @@ function Request-amt-Files{
         # Create the download directory if it does not exist.
 		New-Item -ItemType directory -Path $downloadPath
 	}
-		
+
 	$ZipFile = Join-Path $downloadPath "$($destinationName).zip"
-	
-	Invoke-WebRequest -Uri $Url -OutFile $ZipFile 
-	
+
+	Invoke-WebRequest -Uri $Url -OutFile $ZipFile
+
     if ($LASTEXITCODE) {
         throw "Failed to download package $($amtConfig.packageDetails.packageName) $($amtConfig.packageDetails.version)"
     }
@@ -248,13 +248,13 @@ function Expand-amt-Files {
         [string]$destinationName,
         [Hashtable]$amtConfig
     )
-    
+
     $amtVersionDestination = (Join-Path $amtPath $destinationName)
 
     $ZipFile = Join-Path $downloadPath "$($destinationName).zip"
-    
+
     Expand-Archive -Path $ZipFile -DestinationPath $amtVersionDestination -Force
-    
+
     if ($LASTEXITCODE) {
         throw "Failed to extract package $($amtConfig.packageDetails.packageName) $($amtConfig.packageDetails.version)"
     }
@@ -268,7 +268,7 @@ function New-amt-ConnectionString{
     param (
         $databaseInfo
     )
-    $postgresqlConnectionString="host={0};Database={1};user id={2};Password={3};port={4}" 
+    $postgresqlConnectionString="host={0};Database={1};user id={2};Password={3};port={4}"
     $mssqlConnectionStringIntegrated="Server={0};Database={1};Integrated Security=SSPI;"
     $mssqlConnectionString="Server={0};Database={1};user id={2};Password={3};"
     if($databaseInfo.engine -ieq "SQLServer"){
@@ -301,7 +301,7 @@ function Get-DestinationName{
     }
     Else {
         return "$($amtConfig.packageDetails.packageName)-$($amtConfig.packageDetails.version)"
-    } 
+    }
 }
 
 Export-ModuleMember Install-AMT, Uninstall-AMT

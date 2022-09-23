@@ -202,7 +202,7 @@
         packageDetails  = @{
             packageURL      = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit"
             version         = "main"
-        }     
+        }
         sampleData      = @{
             key             = "dfghjkl34567"
             secret          = "4eryftgjh-pok%^K```$E%RTYG"
@@ -237,7 +237,7 @@ param (
     $webRootFolder  = "c:\inetpub\Ed-Fi",
     # Root directory for web application installs.
     [string]
-    $WebRoot        = "Ed-Fi",   
+    $WebRoot        = "Ed-Fi",
     # Path for storing downloaded packages
     [string]
     $downloadPath   = "C:\\temp",
@@ -381,7 +381,7 @@ param (
         packageDetails  = @{
             packageURL      = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit"
             version         = "main"
-        }     
+        }
         sampleData      = @{
             key             = "dfghjkl34567"
             secret          = "4eryftgjh-pok%^K```$E%RTYG"
@@ -392,13 +392,13 @@ $global:ErrorActionPreference = "Stop"
 # Disabling the progress report from `Invoke-WebRequest`, which substantially
 # slows the download time.
 $global:ProgressPreference = "SilentlyContinue"
-Write-Host "Installing EdFi Suite..."
+Write-Output "Installing EdFi Suite..."
 # Import all needed modules
 # Create a few directories
 New-Item -Path $InstallPath -ItemType Directory -Force | Out-Null
 New-Item -Path $webRootFolder -ItemType Directory -Force | Out-Null
 
-Import-Module -Name "$PSScriptRoot/modules/Configure-Windows.psm1" -Force 
+Import-Module -Name "$PSScriptRoot/modules/Configure-Windows.psm1" -Force
 #--- IMPORT MODULES FOR EdFiSuite individual modules ---
 Import-Module -Force "$PSScriptRoot/modules/EdFi-Admin.psm1"
 Import-Module -Force "$PSScriptRoot/modules/EdFi-DBs.psm1"
@@ -419,21 +419,21 @@ $toolsPath = "$($downloadPath)\tools"
 Invoke-RefreshPath
 Enable-LongFileNames
 
-Write-Host "Installing NugetCli..."
+Write-Output "Installing NugetCli..."
 Install-NugetCli $toolsPath
 
-Write-Host "Installing SqlServerModule..."
+Write-Output "Installing SqlServerModule..."
 Install-SqlServerModule
 
 #--- Start EdFi modules installation if required
 # Install Databases
 if ($databasesConfig.installDatabases){
-    Write-host "Installing Databases..." -ForegroundColor Cyan
-    
+    Write-Output "Installing Databases..." -ForegroundColor Cyan
+
     #Create a database Admin user
     if($databasesConfig.addAdminUser){
-        Write-host "Creating database user ($($databasesConfig.dbAdminUser))..." -ForegroundColor Cyan
-        try { 
+        Write-Output "Creating database user ($($databasesConfig.dbAdminUser))..." -ForegroundColor Cyan
+        try {
             $Pass       = ConvertTo-SecureString -String "$($databasesConfig.dbAdminUserPassword)" -AsPlainText -Force
             $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "$($databasesConfig.dbAdminUser)", $Pass
             Add-SqlLogin -ServerInstance $databasesConfig.databaseServer -LoginName "$($databasesConfig.dbAdminUser)" -LoginType "SqlLogin" -DefaultDatabase "master" -GrantConnectSql -Enable -LoginPSCredential $Credential
@@ -441,8 +441,8 @@ if ($databasesConfig.installDatabases){
             $serverRole = $server.Roles | Where-Object {$_.Name -eq 'sysadmin'}
             $serverRole.AddMember("$($databasesConfig.dbAdminUser)")
         }
-        catch { 
-            Write-Host "User not added to the database" 
+        catch {
+            Write-Output "User not added to the database"
         }
     }
 
@@ -453,14 +453,14 @@ if ($databasesConfig.installDatabases){
         timeTravelScriptPath= "$PSScriptRoot/time-travel.sql"
         edfiSource          = $EdFiNuGetFeed
     }
-    
+
     Install-EdFiDbs @db_parameters
 }
 
 # Install Web API
 if ($webApiConfig.installWebApi){
-    Write-host "Installing Web API..." -ForegroundColor Cyan
-    
+    Write-Output "Installing Web API..." -ForegroundColor Cyan
+
     $api_parameters = @{
         webSiteName     = $WebRoot
         toolsPath       = $toolsPath
@@ -469,28 +469,28 @@ if ($webApiConfig.installWebApi){
         databasesConfig = $databasesConfig
         edfiSource      = $EdFiNuGetFeed
     }
-    
+
     $apiPackagePath = Install-EdFiAPI @api_parameters
      # IIS-Components.psm1 must be imported after the IIS-WebServerManagementTools
     # windows feature has been enabled. This feature is enabled during Install-WebApi
     # by the AppCommon library.
-    try{        
+    try{
         Import-Module -Force "$apiPackagePath\AppCommon\IIS\IIS-Components.psm1"
         $portNumber = IIS-Components\Get-PortNumber $WebRoot
 
         $expectedWebApiBaseUri = "https://$($env:computername):$($portNumber)/$($webApiConfig.webApplicationName)"
-        Write-Host "Setting API URL..."
+        Write-Output "Setting API URL..."
         Set-ApiUrl $expectedWebApiBaseUri
-        Write-Host "Setting API URL Finished..."
+        Write-Output "Setting API URL Finished..."
     }catch{
-        Write-Host "Skipped Setting API URL"
+        Write-Output "Skipped Setting API URL"
     }
 }
 
 # Install SwaggerUI
 if ($swaggerUIConfig.installSwaggerUI){
-    Write-host "Installing Swagger..." -ForegroundColor Cyan
-    
+    Write-Output "Installing Swagger..." -ForegroundColor Cyan
+
     if($swaggerUIConfig.swaggerAppSettings.apiMetadataUrl){
         Test-ApiUrl $swaggerUIConfig.swaggerAppSettings.apiMetadataUrl
         if((Test-YearSpecificMode $databasesConfig.apiMode)) {
@@ -498,19 +498,19 @@ if ($swaggerUIConfig.installSwaggerUI){
         }
     }
     else{
-        Write-host "Swagger apiMetadataUrl is Emtpy." -ForegroundColor Cyan
+        Write-Output "Swagger apiMetadataUrl is Emtpy." -ForegroundColor Cyan
     }
     # Web API Url
     $ApiUrl="https://$($env:computername)/$($webApiConfig.webApplicationName)"
-    
+
     $swaggerUIConfig.swaggerAppSettings.apiVersionUrl=$ApiUrl
-    
+
     if($swaggerUIConfig.swaggerAppSettings.apiVersionUrl){
         Test-ApiUrl $swaggerUIConfig.swaggerAppSettings.apiVersionUrl
     }
     else{
-        Write-host "Swagger apiUrl is Emtpy." -ForegroundColor Cyan
-    }    
+        Write-Output "Swagger apiUrl is Emtpy." -ForegroundColor Cyan
+    }
 
     $swagger_parameters = @{
         webSiteName     = $WebRoot
@@ -520,14 +520,14 @@ if ($swaggerUIConfig.installSwaggerUI){
         ApiUrl          = "https://$($env:computername)/$($webApiConfig.webApplicationName)"
         edfiSource      = $EdFiNuGetFeed
     }
-    
+
     Install-EdFiSwagger @swagger_parameters
 }
 
 # Installing AdminApp
 if ($adminAppConfig.installAdminApp){
-    write-host "Installing AdminApp..." -ForegroundColor Cyan
-    
+    Write-Output "Installing AdminApp..." -ForegroundColor Cyan
+
     $admin_parameters = @{
         webSiteName     = $WebRoot
         toolsPath       = $toolsPath
@@ -537,14 +537,14 @@ if ($adminAppConfig.installAdminApp){
         ApiUrl          = "https://$($env:computername)/$($webApiConfig.webApplicationName)"
         edfiSource      = $EdFiNuGetFeed
     }
-    
+
     Install-EdFiAdmin @admin_parameters
 }
 
 # Install BulkLoadClient"
 if($bulkLoadClientConfig.installBulkLoadClient) {
-    Write-Host "Installing Bulk Load Client..." -ForegroundColor Cyan
-    
+    Write-Output "Installing Bulk Load Client..." -ForegroundColor Cyan
+
     $bulkClientParam=@{
         PackageName     = "$($bulkLoadClientConfig.packageDetails.packageName)"
         PackageVersion  = "$($bulkLoadClientConfig.packageDetails.version)"
@@ -552,29 +552,29 @@ if($bulkLoadClientConfig.installBulkLoadClient) {
         ToolsPath       = $toolsPath
         edfiSource      = $EdFiNuGetFeed
     }
-    
+
     Install-ClientBulkLoader @bulkClientParam
 }
 
 # Install LMSToolkit"
 if($lmsToolkitConfig.installLMSToolkit){
     # Now install the LMS Toolkit.
-    write-host "Installing LMS Toolkit..." -ForegroundColor Cyan
-    
+    Write-Output "Installing LMS Toolkit..." -ForegroundColor Cyan
+
     $params = @{
         DownloadPath        = $downloadPath
         InstallDir          = "$($lmsToolkitConfig.installationDirectory)"
         lmsToolkitConfig    = $lmsToolkitConfig
         databasesConfig     = $databasesConfig
     }
-    
+
     Install-LMSToolkit @params
 }
 
 # Install AMT
 if ($amtConfig.installAMT){
-    Write-Host "Installing AMT..." -ForegroundColor Cyan
-    
+    Write-Output "Installing AMT..." -ForegroundColor Cyan
+
     $parameters = @{
         amtConfig        = $amtConfig
         databasesConfig  = $databasesConfig
@@ -582,5 +582,5 @@ if ($amtConfig.installAMT){
 
     Install-amt @parameters
 
-    Write-Host "AMT has been installed" -ForegroundColor Cyan
+    Write-Output "AMT has been installed" -ForegroundColor Cyan
 }

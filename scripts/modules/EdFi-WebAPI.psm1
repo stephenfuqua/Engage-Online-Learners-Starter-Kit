@@ -109,8 +109,8 @@ function Install-EdFiAPI(){
         downloadPath = $downloadPath
         edfiSource   = $edfiSource
     }
-    Write-Host "---" -ForegroundColor Magenta
-    Write-Host "Ed-Fi Web API module process starting..." -ForegroundColor Magenta
+    Write-Output "---" -ForegroundColor Magenta
+    Write-Output "Ed-Fi Web API module process starting..." -ForegroundColor Magenta
 
 	# Temporary fix for solving the path-resolver.psm1 missing module error. Can be reworked once #ODS-4535 resolved.
 	$pathResolverModule = "path-resolver"
@@ -118,26 +118,26 @@ function Install-EdFiAPI(){
 	{
 		Remove-Module $pathResolverModule
 	}
-    
+
     $packagePath = Install-EdFiPackage @packageDetails
 
-	Write-Host "Starting installation..." -ForegroundColor Cyan
+	Write-Output "Starting installation..." -ForegroundColor Cyan
     $newApiParameter = @{
         webApiConfig    = $webApiConfig
         databasesConfig = $databasesConfig
         toolsPath       = $toolsPath
         downloadPath    = $downloadPath
         webSiteName     = $webSiteName
-        edfiSource      = $edfiSource        
+        edfiSource      = $edfiSource
     }
-    $parameters = New-WebApiParameters @newApiParameter  
-    
+    $parameters = New-WebApiParameters @newApiParameter
+
     $parameters.WebSiteName = $webSiteName
-    
+
     Import-Module -Force "$packagePath\Install-EdFiOdsWebApi.psm1"
 
     Install-EdFiOdsWebApi @parameters
-   
+
     return $packagePath
 }
 

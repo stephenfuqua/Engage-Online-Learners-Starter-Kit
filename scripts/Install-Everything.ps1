@@ -32,7 +32,7 @@
 
     .PARAMETER InstallPath
     Root directory for the application installation
-    
+
     .PARAMETER webRootFolder
     Root directory for web applications.
 
@@ -189,7 +189,7 @@
         packageDetails  = @{
             packageURL      = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit"
             version         = "main"
-        }     
+        }
         sampleData      = @{
             key             = "dfghjkl34567"
             secret          = "4eryftgjh-pok%^K```$E%RTYG"
@@ -202,7 +202,7 @@ param (
     $InstallPath    = "c:/Ed-Fi",
     # Root Site for web application.
     [string]
-    $WebRoot        = "Ed-Fi",   
+    $WebRoot        = "Ed-Fi",
     # Path for storing downloaded packages
     [string]
     $downloadPath   = "C:\\temp",
@@ -346,7 +346,7 @@ param (
         packageDetails  = @{
             packageURL      = "https://github.com/Ed-Fi-Alliance-OSS/LMS-Toolkit"
             version         = "main"
-        }     
+        }
         sampleData      = @{
             key             = "dfghjkl34567"
             secret          = "4eryftgjh-pok%^K```$E%RTYG"
@@ -365,7 +365,7 @@ Set-ExecutionPolicy bypass -Scope CurrentUser -Force;
 # Install Third Party applications
 & "$PSScriptRoot/Install-ThirdPartyApplications.ps1" -ToolsPath $toolsPath
 
-Write-Host "Creating Ed-Fi Suite parameter..."
+Write-Output "Creating Ed-Fi Suite parameter..."
 $edfiSuiteParam = @{
     InstallPath         =$InstallPath
     WebRoot             =$WebRoot
@@ -380,7 +380,7 @@ $edfiSuiteParam = @{
     lmsToolkitConfig    =$lmsToolkitConfig
 }
 
-Write-Host "Running Ed-Fi Install-EdFiTechnologySuite.ps1"
+Write-Output "Running Ed-Fi Install-EdFiTechnologySuite.ps1"
 & "$PSScriptRoot/Install-EdFiTechnologySuite.ps1" @edfiSuiteParam
 
 # Restart IIS, which also requires stopping the Windows Activation Service.
@@ -389,7 +389,7 @@ Write-Host "Running Ed-Fi Install-EdFiTechnologySuite.ps1"
 Stop-Service -name was -Force -Confirm:$False
 Start-Service -name w3svc
 
-Write-Host "Creating Ed-Fi Starter Kit parameter..."
+Write-Output "Creating Ed-Fi Starter Kit parameter..."
 $starterKitParam= @{
     lmsToolkitConfig            = $lmsToolkitConfig
     databasesConfig             = $databasesConfig
@@ -400,5 +400,5 @@ $starterKitParam= @{
     webRootFolder               = $lmsToolkitConfig.webRootFolder
     OdsPlatformVersion          = $odsPlatformVersion
 }
-Write-Host "Running Ed-Fi Install-StarterKit.ps1..."
+Write-Output "Running Ed-Fi Install-StarterKit.ps1..."
 & "$PSScriptRoot/Install-StarterKit.ps1" @starterKitParam

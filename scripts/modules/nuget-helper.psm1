@@ -19,15 +19,15 @@ function Install-NugetCli {
     $NugetExe = "$ToolsPath/nuget.exe"
 
     if (-not $(Test-Path $NugetExe)) {
-        Write-Host "Downloading nuget.exe official distribution from " $NuGetInstaller
+        Write-Output "Downloading nuget.exe official distribution from " $NuGetInstaller
         Invoke-RestMethod -Uri $NuGetInstaller -OutFile $NugetExe
     }
     else {
         $info = Get-Command $NugetExe
-        Write-Host "Found nuget exe in: $toolsPath"
+        Write-Output "Found nuget exe in: $toolsPath"
 
         if ("5.3.1.0" -ne $info.Version.ToString()) {
-            Write-Host "Updating nuget.exe official distribution from " $NuGetInstaller
+            Write-Output "Updating nuget.exe official distribution from " $NuGetInstaller
             Invoke-RestMethod -Uri $NuGetInstaller -OutFile $NugetExe
         }
     }
@@ -54,10 +54,10 @@ function Install-EdFiPackage {
         ToolsPath="$toolsPath"
         edfiSource=$edfiSource
     }
-    
+
     $packageVersion = Get-NuGetPackageVersion @nugetPackageVersionParam
     $downloadedPackagePath = Join-Path $downloadPath "$($packageName).$($packageVersion)"
-    Write-Host "Package: $($packageName).$($packageVersion)"
+    Write-Output "Package: $($packageName).$($packageVersion)"
     &"$toolsPath\nuget" install $packageName -source $edfiSource -Version $packageVersion -outputDirectory $downloadPath -ConfigFile "$PSScriptRoot\nuget.config" | Out-Host
 
     if ($LASTEXITCODE) {
@@ -81,7 +81,7 @@ function Get-NuGetPackageVersion {
         [string]
         $edfiSource
     )
-    Write-Host "Looking latest patch of $PackageName version $PackageVersion"
+    Write-Output "Looking latest patch of $PackageName version $PackageVersion"
     $NuGetExe ="$toolsPath\nuget"
     # If version is provided with just Major.Minor, then lookup all
     # available versions and find the latest patch for that release
@@ -93,7 +93,7 @@ function Get-NuGetPackageVersion {
             $PackageName
         )
 
-        Write-Host $NugetExe @params
+        Write-Output $NugetExe @params
         $response = &$NuGetExe @params
 
         $response -Split [Environment]::NewLine | ForEach-Object {
@@ -141,7 +141,7 @@ function Install-NuGetPackage {
         $PackageName
     )
 
-    Write-Host "Installing package $PackageName version $PackageVersion"
+    Write-Output "Installing package $PackageName version $PackageVersion"
     &$NugetExe @params | Out-Host
 
     Test-ExitCode
