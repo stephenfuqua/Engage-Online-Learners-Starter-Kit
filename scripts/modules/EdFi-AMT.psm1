@@ -77,9 +77,9 @@ function Install-AMT {
     try {
         $databaseEngine = if($databasesConfig.engine -ieq "SQLServer"){"mssql"}else{"postgres"}
 
-        Request-amt-Files @paths
+        Get-AmtZipFile @paths
 
-        Expand-amt-Files @paths
+        Expand-AmtZipFile @paths
 
         $connectionString = New-amt-ConnectionString $databasesConfig
 
@@ -195,9 +195,9 @@ function Uninstall-AMT {
     try{
         $databaseEngine = if($databasesConfig.engine -ieq "SQLServer"){"mssql"}else{"postgres"}
 
-        Request-amt-Files @packageDetails @paths
+        Get-AmtZipFile @packageDetails @paths
 
-        Expand-amt-Files @packageDetails @paths
+        Expand-AmtZipFile @packageDetails @paths
 
         $connectionString = New-amt-ConnectionString $databasesConfig
 
@@ -210,7 +210,7 @@ function Uninstall-AMT {
         throw $_
     }
 }
-function Request-amt-Files{
+function Get-AmtZipFile {
     param (
         [string]$amtPath = "C:\temp\",
         [string]$downloadPath = "C:\temp\downloads\",
@@ -241,7 +241,7 @@ function Request-amt-Files{
 
     return Resolve-Path $amtPath
 }
-function Expand-amt-Files {
+function Expand-AmtZipFile {
     param (
         [string]$amtPath = "C:\temp\",
         [string]$downloadPath = "C:\temp\downloads\",
