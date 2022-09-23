@@ -35,17 +35,33 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b  # v3.0.2
 
       - name: Search for Code Files
-        id: count
+        id: languages
         shell: pwsh
         run: |
           Write-Output "::set-output name=count::$( (Get-ChildItem -Include *.cs, *.js, *.ts, *.py -Recurse).Count )"
+
+          $languages = @()
+
+          if ((Get-ChildItem -Include *.cs -Recurse).Count -gt 0) {
+            $languages += "csharp"
+          }
+          if ((Get-ChildItem -Include *.ts -Recurse).Count -gt 0) {
+            $languages += "typescript"
+          }
+          if ((Get-ChildItem -Include *.js -Recurse).Count -gt 0) {
+            $languages += "javascript"
+          }
+          if ((Get-ChildItem -Include *.py -Recurse).Count -gt 0) {
+            $languages += "python"
+          }
+          Write-Output "::set-output name=languages::$( $languages -join "," )"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
         if: steps.count.outputs.count > 0
         with:
-          languages: csharp, typescript, javascript, python
+          languages: steps.languages.outputs.languages
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
-        if: steps.count.outputs.count > 0
+        if: steps.languages.outputs.count > 0
