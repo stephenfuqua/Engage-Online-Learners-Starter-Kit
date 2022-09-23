@@ -60,7 +60,7 @@ jobs:
         uses: github/codeql-action/init@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
         if: steps.languages.outputs.count > 0
         with:
-          languages: steps.languages.outputs.languages
+          languages: ${{ steps.languages.outputs.languages }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
