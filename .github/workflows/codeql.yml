@@ -5,18 +5,26 @@
 
 name: CodeQL Security Scan
 
+# NOTE: there is no CodeQL support for PowerShell. This job will only run
+# if someone adds files from one of the supported languages.
+
 on:
   pull_request:
     branches:
       - main
     paths:
-      - 'scripts/**'
+      - '**/*.cs'
+      - '**/*.ts'
+      - '**/*.js'
+      - '**/*.py'
   push:
     branches:
       - main
     paths:
-      - 'scripts/**'
-  workflow_dispatch:
+      - '**/*.cs'
+      - '**/*.ts'
+      - '**/*.js'
+      - '**/*.py'
 
 jobs:
   analyze:
@@ -39,9 +47,11 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
         with:
-          # There is no CodeQL for PowerShell - but maybe this will detect any C#
-          # that is embedded into PowerShell files?
-          languages: "csharp"
+          languages:
+          - csharp
+          - typescript
+          - javascript
+          - python
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
