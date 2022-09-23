@@ -58,7 +58,7 @@ jobs:
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@1fae5bf71b0ecdc7d0a2ef0d0c28409d99693966  # v2.9.2
-        if: steps.count.outputs.count > 0
+        if: steps.languages.outputs.count > 0
         with:
           languages: steps.languages.outputs.languages
 
